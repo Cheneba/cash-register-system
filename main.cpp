@@ -35,7 +35,6 @@ public:
     }
 
     bool updateSalesDb(vector<array<string, 4>> (&arrayPointer)) {
-        cout << arrayPointer.size() << endl;
         for(int unsigned i=0; i<arrayPointer.size(); i++){
             this->sale.push_back(arrayPointer[i]);
         }

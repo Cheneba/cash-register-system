@@ -2,8 +2,15 @@
 #include<vector>
 #include<array>
 #include<typeinfo>
+#include <fstream>
+#include <set>
+#include <sstream>
+#include <iterator>
 
 using namespace std;
+	void displayStockDatabase(const string& filename);
+	vector<string>splitString(const string& str, char delimiter);
+
 
 class AccountingSystem{
 private:
@@ -12,47 +19,39 @@ private:
 public:
     double total_amount_sold;
     AccountingSystem(){
+        // creates an array of 4 empty strings
         std::array<std::string, 4> arr = {"fine", "", "", ""};
         this->sale.push_back(arr);
-        /* USED TO TEST UPDATESALESDB
+
         std::vector<std::array<std::string, 4>> testSale;
-        std::array<std::string, 4> arr1 = {"fine", "", "great", ""};
-        std::array<std::string, 4> arr2 = {"fine", "ok", "", "hello"};
+        std::array<std::string, 4> arr1 = {"itel", "phone", "50000", "5"};
+        std::array<std::string, 4> arr2 = {"iphone", "charger", "12000", "12"};
 
         testSale.push_back(arr1);
         testSale.push_back(arr2);
 
         this->updateSalesDb(testSale);
-        */
+
     }
 
-    void updateSalesDb(vector<array<string, 4>> (&arrayPointer)) {
+    bool updateSalesDb(vector<array<string, 4>> (&arrayPointer)) {
         cout << arrayPointer.size() << endl;
-        for(int i=0; i<arrayPointer.size(); i++){
+        for(int unsigned i=0; i<arrayPointer.size(); i++){
             this->sale.push_back(arrayPointer[i]);
         }
-
+        return true;
     }
     vector<array<string, 4>>* getDbValues(){
-        /*
-        // HOW TO ACCESS GETDBVALUES
-        vector<array<string, 4>>* cpy;
-        cpy = as.getDbValues();
-        for(int i=0; i<(*test).size(); i++){
-            for(int j=0; j<4; j++){
-                cout << (*test)[i][j] << "\t";
-            } cout << endl;
-        }
-        */
         return &this->sale;
     };
     void DisplayDbValues(){
-        for(int i=0; i<this->sale.size(); i++){
+        for(int unsigned i=0; i<this->sale.size(); i++){
             for(int j=0; j<4; j++){
                 cout << this->sale[i][j] << "\t";
             } cout << endl;
         }
     };
+
 };
 
 class Product{
@@ -66,7 +65,7 @@ private:
     double profitperproduct;
 public:
     Product(int pid, string b , string c, double pr , int qtt):product_id(pid), brand(b), category(c), price(pr), quantity(qtt) {
-        this->promotions = 0;
+        this->promotions = 1;
     }
     int getProductId(){
         return this->product_id;
@@ -100,7 +99,7 @@ public:
     }
     void setPromotions(double value){
         if(value >= 0 && value <= 100){
-            this->promotions = value/100;
+            this->promotions = this->promotions - value/100;
         } else {
             cout << "VALUE MUST BE BETWEEN 0 AND 100";
         }
@@ -122,7 +121,7 @@ private:
     vector<Product> products;
     AccountingSystem* AS_REF;
 public:
-    StoreManagingSystem(int s, string sa, string sn,AccountingSystem* as_r):store_id(s),store_address(sa),seller_name(sn), AS_REF(as_r) {
+    StoreManagingSystem(int s, string sa,AccountingSystem* as_r):store_id(s),store_address(sa), AS_REF(as_r) {
         Product prod(1, "store", "store", 0, 0);
         this->products.push_back(prod);
         Product newProd1(2, "store", "Charger", 50000, 5);
@@ -135,22 +134,25 @@ public:
         this->products.push_back(newProd4);
     }
 
+    void setSellerName(string value){
+        this->seller_name = value;
+    }
+    string getSellerName(string value){
+        return this->seller_name;
+    }
     int getStoreId(){
         return this->store_id;
     };
-    /*void setStoreId(int value){
-        this->store_id = value;
-    };
-    */
     Product* getProduct(int pid){
-        for(int i=0; i<products.size(); i++){
+        for(int unsigned i=0; i<products.size(); i++){
             if(products[i].getProductId() == pid){
                 return &this->products[i];
             }
-        }
+        } return nullptr;
     };
     void setProduct(){
         string b, c, p, q;
+        bool check;
         do {
             cout << "Continue? Enter [exit] if done\n";
             cout << "Enter Product Brand: ";
@@ -173,8 +175,19 @@ public:
                         if (q != "exit") {
                             cin.clear();
                             cin.ignore(100, '\n');
-                            Product newProd(this->products.size(), b, c, std::stod(p), std::stoi(q));
-                            this->products.push_back(newProd);
+                            for(int unsigned i=0; i<this->products.size(); i++){
+                                if(this->products[i].getBrand() == b, this->products[i].getCategory() == c){
+                                    this->products[i].updateQuantityBy(std::stoi(q));
+                                    this->products[i].setPrice(std::stoi(p));
+                                    check = true;
+                                }
+                            }
+                            if(!check){
+                                Product newProd(this->products.size(), b, c, std::stod(p), std::stoi(q));
+                                this->products.push_back(newProd);
+                            } else {
+                                check = false;
+                            }
                         } else {
                             break; // Exit the loop when "exit" is entered
                         }
@@ -194,7 +207,7 @@ public:
     void checkStockCount(){
         cout << "\n\t All PRODUCTS \n"
              << "PID\tBRAND\tCATEGORY PRICE\t  QUANTITY PROMOTIONS\n";
-        for(int i=0; i<this->products.size(); i++){
+        for(int unsigned i=0; i<this->products.size(); i++){
             cout << this->products[i].getProductId()
                  << "\t" <<this->products[i].getBrand()
                  << "\t" << this->products[i].getCategory()
@@ -205,14 +218,16 @@ public:
         }
     };
     void chooseProducts(){
-        int pid;
-        double bill = 0.0;
+        int pid, q;
+        double bill(0.0);
         vector<int> product_list;
-        vector<double> quantity_list;
+        vector<int> quantity_list;
+        vector<array<string, 4>> sl;
+        Product* prod;
         char ch;
         do{
             system("cls");
-            this->checkStockCount;
+            this->checkStockCount();
             cout << "Choose Product(by Product Number): ";
             cin >> pid;
             cout << "Quantity: ";
@@ -227,29 +242,41 @@ public:
             }
         } while(true);
         if(product_list.size() != 0){
-            for(int i=0; i<product_list.size(); i++){
-                bill += this->products[i].getPrice()*quantity_list[i]*this->products[i].getPromotions();
+            for(int unsigned i=0; i<product_list.size(); i++){
+                bill += this->products[product_list[i]].getPrice()*quantity_list[i]*this->products[i].getPromotions();
             }
-            cout << "\n\t "<< (*prod).getBrand() << " -- " << (*prod).getCategory() << "\n"
-                 << "PID\tBRAND\tCATEGORY PRICE\t  QUANTITY PROMOTIONS\n";
+            cout << "\n\t LIST OF PRODUCTS -- " << this->store_address << "\n"
+                 << "BRAND\tCATEGORY PRICE\t  QUANTITY PROMOTIONS\n";
 
-            for(int i=0; i<product_list.size(); i++){
+                cout<< "ok";
+            for(int unsigned i=0; i<product_list.size(); i++){
                 prod = this->getProduct(product_list[i]);
                 if(prod == nullptr){
                     continue;
                 }
-                cout << (*prod).getProductId()
-                     << "\t" <<(*prod).getBrand()
+                cout <<(*prod).getBrand()
                      << "\t" << (*prod).getCategory()
                      << "\t " << (*prod).getPrice()
                      << "\t  " << quantity_list[i]
-                     << "\t   " << (*prod).getPromotions()*100
+                     << "\t   " << (*prod).getPromotions()
                      << endl;
             }
-            cout << "\n\n\t\tBill: " << bill << endl;
+            cout << "\n\t\tBill: " << bill << endl;
             cout << "\t\tFinish(y/n)? ";
+            cin >> ch;
             if(ch == 'y'){
-                return true;
+                for(int unsigned i=0; i<product_list.size(); i++){
+                    this->products[product_list[i]].updateQuantityBy(0-quantity_list[i]);
+                    sl.push_back({this->products[product_list[i]].getBrand(),this->products[product_list[i]].getCategory(), std::to_string(this->products[product_list[i]].getPrice()), std::to_string(quantity_list[i])});
+                }
+
+                // stores sales data to the database
+                if(this->AS_REF->updateSalesDb(sl)){
+                    cout << "\n Successful\n";
+                } else {
+                    cout << "\n Redo";
+                    this->chooseProducts();
+                }
             }
         }
     };
@@ -259,6 +286,7 @@ public:
         Product* prod;
         do{
             system("cls");
+            this->checkStockCount();
             cout << "Enter Product Number: ";
             cin >> pid;
             prod = this->getProduct(pid);
@@ -298,7 +326,7 @@ public:
             cin >> pid;
             cout << "Enter New Discount: ";
             cin >> newPromotion;
-            for(int i=0; i<this->products.size(); i++){
+            for(int unsigned i=0; i<this->products.size(); i++){
                 if(this->products[i].getProductId() == pid){
                     this->products[i].setPromotions(newPromotion);
                     success = true;
@@ -320,27 +348,108 @@ public:
             }
         } while(true);
     };
-    void runStore (){  };
+
+    bool runStore (){
+        int i;
+        do{
+            cout << "\t\t" <<this->store_address << endl;
+            cout << "\n1. Buy Products\n2. Add Products\n3. Check Product Details\n4.Logout\n\tChoice: ";
+            cin >> i;
+            system("cls");
+            switch(i){
+                case 1:{
+                    this->chooseProducts();
+                    system("cls");
+                    break;
+                } case 2:{
+                    this->setProduct();
+                    system("cls");
+                    break;
+                } case 3:{
+                    if(!this->getProductDetails()){
+                        system("cls");
+                        cout << "ERR - NO SUCH PRODUCT FOUND\n";
+                    } else {
+                        system("cls");
+                    }
+
+                    break;
+                } case 4:{
+                    return true;
+                    break;
+                } default:{
+                    system("cls");
+                    continue;
+                }
+            }
+        } while(true);
+    };
 };
 
 
 
 int main(){
-
+    int i, sid, p, pin(1234);
+    string sn, ch;
     AccountingSystem as;
 
-    StoreManagingSystem sms(1, "Funcha Junction", "Ngum Lili", &as);
+    StoreManagingSystem sms1(1, "Mobile", &as);
+    
+    
 
+    do{
+        cout << "\n1. Operations Manager Account\n2. Seller Account\n3. Exit\n\tChoice: ";
+        cin >> i;
+        switch(i){
+            case 1:{
+                cout << "Enter Seller ID: ";
+                cin >> sid;
+                cout << "Enter Name: ";
+                cin >> sn;
+                switch(sid){
+                    case 1:{
+                        sms1.setSellerName(sn);
+                        sms1.runStore();
+                        system("cls");
+                        break;
+                    }
+                    default:{
+                        system("cls");
+                        cout << "\nNOT A SELLER\n";
+                    }
+                }
+                break;
+            } case 2:{
+                cout << "Enter PIN: ";
+                cin >> p;
+                if(p == pin){
+                    cout << "Select Store\n1. Mobile\nExtra\n2. Check Store Inventory\n3. Apply Promotions\tChoice: ";
+                    cin >> i;
+                    switch(i){
+                        case 1:{
+                            system("cls");
+                            sms1.runStore();
+                            break;
+                        }
+                        case 2:{
+                            system("cls");
+                            as.DisplayDbValues();
 
-    //  TEST FOR GETPRODUCTDETAILS
-    sms.getProductDetails();
+                            break;
+                        }
+                        case 3:{
+                            sms1.applyPromotions();
+                            break;
+                        }
+                    }
+                }
 
-    /*
-     TEST FOR GETPRODUCT
-    Product* prod;
-    prod = sms.getProduct(1);
-    cout << (*prod).getCategory()<< endl;
-    */
+                break;
+            } case 3:{
+                exit(0);
+            }
+        }
+    } while(true);
     cout << "\nWorking!";
     return 0;
 }
